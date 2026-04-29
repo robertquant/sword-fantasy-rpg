@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@scenes/*": ["src/scenes/*"],
+      "@systems/*": ["src/systems/*"],
+      "@data/*": ["src/data/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}
