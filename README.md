@@ -42,4 +42,5 @@ pnpm run preview
 - 设计基准见 [DESIGN-DOCUMENT.md](./DESIGN-DOCUMENT.md)
 - 开发进度见 [PROGRESS.md](./PROGRESS.md)
 - 剧情和支线规划见 [story-and-sidequests.md](./docs/plans/story-and-sidequests.md)
+- 十章主线规划见 [main-story-chapters.md](./docs/plans/main-story-chapters.md)
 - 每次完成阶段性功能后更新进度文档
