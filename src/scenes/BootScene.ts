@@ -26,6 +26,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('title-background', 'assets/ui/title-background.png');
     this.load.spritesheet('hero-walk', 'assets/sprites/player/sword-cultivator-walk.png', { frameWidth: 96, frameHeight: 96 });
     this.load.image('elder', 'assets/sprites/npc/village-elder.png');
+    this.load.image('npc-herbalist', 'assets/sprites/npc/herbalist.png');
+    this.load.image('npc-blacksmith', 'assets/sprites/npc/blacksmith.png');
+    this.load.image('npc-patrol', 'assets/sprites/npc/patrol-disciple.png');
     this.load.image('enemy-bamboo-snake', 'assets/sprites/enemies/bamboo-snake.png');
     this.load.image('enemy-bamboo-demon', 'assets/sprites/enemies/bamboo-demon.png');
     this.load.image('battleback-bamboo', 'assets/battlebacks/bamboo-battle.png');

@@ -23,6 +23,7 @@ pnpm run dev
 - 战斗中点击攻击、技能、防御或逃跑
 - 竹叶蛇会使用毒牙并造成中毒，竹妖会分身和缠绕
 - 游戏包含程序化背景音乐和战斗音效；首次点击或按键后浏览器会解锁声音
+- 可把自定义 MP3 放到 `public/assets/audio/`：`title.mp3`、`map.mp3`、`battle.mp3`
 - 击败 3 条竹叶蛇后回村长处复命
 - 复命后获得金币奖励，并解锁“竹林深处”
 - 再次找村长接“竹林深处”任务，进入深处击败竹妖
@@ -38,4 +39,5 @@ pnpm run preview
 
 - 设计基准见 [DESIGN-DOCUMENT.md](./DESIGN-DOCUMENT.md)
 - 开发进度见 [PROGRESS.md](./PROGRESS.md)
+- 剧情和支线规划见 [story-and-sidequests.md](./docs/plans/story-and-sidequests.md)
 - 每次完成阶段性功能后更新进度文档

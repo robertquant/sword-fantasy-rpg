@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { getElderDialogue } from '../data/dialogues';
 import { QINGYUN_MAP, type NpcDefinition } from '../data/maps';
+import { getNpcDialogue } from '../data/npcDialogues';
 import { DialogueOverlay } from '../systems/dialogueOverlay';
 import { EncounterSystem, isPointInZone } from '../systems/encounterSystem';
 import { applyBattleResult, gameState, getActiveQuest, type BattleResult } from '../systems/gameState';
@@ -87,11 +87,11 @@ export class MapScene extends Phaser.Scene {
 
   private createNpcs(): void {
     QINGYUN_MAP.npcs.forEach(npc => {
-      const sprite = this.physics.add.staticSprite(npc.x, npc.y, npc.id === 'village_elder' ? 'elder' : 'hero');
-      sprite.setDisplaySize(44, 44);
+      const sprite = this.physics.add.staticSprite(npc.x, npc.y, npc.texture);
+      sprite.setDisplaySize(npc.id === 'village_elder' ? 44 : 50, npc.id === 'village_elder' ? 44 : 50);
       sprite.setData('npc', npc);
       this.npcSprites.push(sprite);
-      this.add.text(npc.x, npc.y - 34, npc.name, { fontSize: '13px', color: '#fff' }).setOrigin(0.5);
+      this.add.text(npc.x, npc.y - 38, npc.name, { fontSize: '13px', color: '#fff' }).setOrigin(0.5);
     });
   }
 
@@ -146,7 +146,7 @@ export class MapScene extends Phaser.Scene {
     const npcSprite = this.npcSprites.find(sprite => Phaser.Math.Distance.Between(this.player.x, this.player.y, sprite.x, sprite.y) < 70);
     if (!npcSprite) { this.showNotice('附近没有可交互对象。'); return; }
     const npc = npcSprite.getData('npc') as NpcDefinition;
-    if (npc.id === 'village_elder') this.openDialogue(getElderDialogue());
+    this.openDialogue(getNpcDialogue(npc));
   }
 
   private openDialogue(lines: string[]): void {

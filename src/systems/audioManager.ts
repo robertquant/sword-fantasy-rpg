@@ -6,6 +6,7 @@ type SfxKey = 'select' | 'attack' | 'skill' | 'hit' | 'poison' | 'win';
 class AudioManager {
   private context?: AudioContext;
   private musicTimer?: number;
+  private track?: HTMLAudioElement;
   private currentMusic?: MusicKey;
   private enabled = true;
 
@@ -13,11 +14,13 @@ class AudioManager {
     if (this.currentMusic === key) return;
     this.stopMusic();
     this.currentMusic = key;
-    this.loopMelody(key);
+    this.tryMp3Track(key);
   }
 
   stopMusic(): void {
     if (this.musicTimer) window.clearTimeout(this.musicTimer);
+    this.track?.pause();
+    this.track = undefined;
     this.musicTimer = undefined;
     this.currentMusic = undefined;
   }
@@ -37,8 +40,23 @@ class AudioManager {
   }
 
   unlock(scene: Phaser.Scene): void {
-    scene.input.once('pointerdown', () => void this.getContext()?.resume());
-    scene.input.keyboard?.once('keydown', () => void this.getContext()?.resume());
+    const resume = (): void => {
+      void this.getContext()?.resume();
+      void this.track?.play().catch(() => undefined);
+    };
+    scene.input.once('pointerdown', resume);
+    scene.input.keyboard?.once('keydown', resume);
+  }
+
+  private tryMp3Track(key: MusicKey): void {
+    const track = new Audio(`assets/audio/${key}.mp3`);
+    track.loop = true;
+    track.volume = key === 'battle' ? 0.55 : 0.42;
+    track.onerror = () => {
+      if (this.currentMusic === key && this.track === track) this.loopMelody(key);
+    };
+    this.track = track;
+    void track.play().catch(() => undefined);
   }
 
   private loopMelody(key: MusicKey): void {
@@ -76,4 +94,3 @@ class AudioManager {
 }
 
 export const audioManager = new AudioManager();
-

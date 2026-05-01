@@ -11,6 +11,7 @@ export interface NpcDefinition {
   x: number;
   y: number;
   color: number;
+  texture: string;
 }
 
 export interface MapDefinition {
@@ -41,6 +42,9 @@ export const QINGYUN_MAP: MapDefinition = {
     { x: 1560, y: 0, width: 40, height: 1200 },
   ],
   npcs: [
-    { id: 'village_elder', name: '村长', x: 500, y: 575, color: 0xf0c987 },
+    { id: 'village_elder', name: '村长', x: 500, y: 575, color: 0xf0c987, texture: 'elder' },
+    { id: 'herbalist', name: '药师', x: 300, y: 710, color: 0xb8f0a2, texture: 'npc-herbalist' },
+    { id: 'blacksmith', name: '铁匠', x: 620, y: 675, color: 0xf0b06a, texture: 'npc-blacksmith' },
+    { id: 'patrol_disciple', name: '巡逻弟子', x: 760, y: 560, color: 0xaed2ff, texture: 'npc-patrol' },
   ],
 };
