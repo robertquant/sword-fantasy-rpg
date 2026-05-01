@@ -9,4 +9,5 @@ export const createStarterPlayer = (): Fighter => ({
   atk: 15,
   def: 8,
   spd: 10,
+  statuses: [],
 });

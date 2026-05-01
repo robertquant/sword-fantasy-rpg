@@ -22,10 +22,13 @@ export class BootScene extends Phaser.Scene {
       text.destroy();
     });
 
-    // 加载素材 — 后续用 $generate2dsprite 和 $generate2dmap 生成
-    // this.load.spritesheet('player', 'assets/sprites/player.png', { frameWidth: 32, frameHeight: 32 });
-    // this.load.tilemapTiledJSON('village', 'assets/maps/village.json');
-    // this.load.image('tiles', 'assets/maps/tiles.png');
+    this.load.image('map-qingyun-bamboo', 'assets/maps/qingyun-bamboo-map.png');
+    this.load.image('title-background', 'assets/ui/title-background.png');
+    this.load.spritesheet('hero-walk', 'assets/sprites/player/sword-cultivator-walk.png', { frameWidth: 96, frameHeight: 96 });
+    this.load.image('elder', 'assets/sprites/npc/village-elder.png');
+    this.load.image('enemy-bamboo-snake', 'assets/sprites/enemies/bamboo-snake.png');
+    this.load.image('enemy-bamboo-demon', 'assets/sprites/enemies/bamboo-demon.png');
+    this.load.image('battleback-bamboo', 'assets/battlebacks/bamboo-battle.png');
   }
 
   create(): void {

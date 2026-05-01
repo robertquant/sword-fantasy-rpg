@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { BATTLE_ACTIONS } from '../data/battleActions';
 import { ENEMIES, createEnemyFighter } from '../data/enemies';
 import { createStarterPlayer } from '../data/player';
+import { performEnemyAction, performPlayerAction } from '../systems/battleAi';
+import { hitFlash, lunge, swordWave } from '../systems/battleEffects';
 import type { BattleAction, BattleData, Fighter, StatusBar } from '../systems/battleTypes';
 
 export class BattleScene extends Phaser.Scene {
@@ -17,6 +19,8 @@ export class BattleScene extends Phaser.Scene {
   private playerHpBar!: StatusBar;
   private playerMpBar!: StatusBar;
   private enemyHpBar!: StatusBar;
+  private playerSprite!: Phaser.GameObjects.Image;
+  private enemySprite!: Phaser.GameObjects.Image;
 
   constructor() {
     super({ key: 'BattleScene' });
@@ -37,16 +41,17 @@ export class BattleScene extends Phaser.Scene {
     const enemyDefinition = ENEMIES[this.battleData.enemyId] ?? ENEMIES.bamboo_snake;
 
     // 战斗背景
-    this.add.rectangle(400, 300, 800, 600, 0x1a1a2e);
-    this.add.rectangle(400, 150, 800, 210, 0x203a32, 0.45);
+    this.add.image(400, 300, 'battleback-bamboo').setDisplaySize(800, 600);
+    this.add.rectangle(400, 300, 800, 600, 0x06120d, 0.28);
     this.add.text(400, 38, '幽竹林遭遇战', { fontSize: '22px', color: '#d7f7c2' }).setOrigin(0.5);
 
-    // 敌人精灵（临时方块，后续替换）
-    this.add.rectangle(400, 150, 64, 64, enemyDefinition.color);
+    // 敌人精灵
+    const enemyKey = this.battleData.enemyId === 'bamboo_demon' ? 'enemy-bamboo-demon' : 'enemy-bamboo-snake';
+    this.enemySprite = this.add.image(400, 150, enemyKey).setDisplaySize(this.battleData.enemyId === 'bamboo_demon' ? 150 : 96, this.battleData.enemyId === 'bamboo_demon' ? 150 : 96);
     this.add.text(400, 110, this.enemy.name, { fontSize: '16px', color: '#fff' }).setOrigin(0.5);
 
     // 玩家精灵
-    this.add.rectangle(400, 420, 48, 48, 0xe94560);
+    this.playerSprite = this.add.image(400, 420, 'hero-walk', 0).setDisplaySize(74, 74);
     this.add.text(400, 390, '剑修', { fontSize: '14px', color: '#fff' }).setOrigin(0.5);
 
     // HP/MP 条
@@ -92,52 +97,29 @@ export class BattleScene extends Phaser.Scene {
 
   private addLog(msg: string): void {
     this.log.push(msg);
-    if (this.log.length > 3) this.log.shift();
+    if (this.log.length > 4) this.log.shift();
     this.logText.setText(this.log.join('\n'));
   }
 
-  private doPlayerAction(action: BattleAction): void {
+  private async doPlayerAction(action: BattleAction): Promise<void> {
     if (!this.isPlayerTurn || this.battleOver) return;
     this.isPlayerTurn = false;
     this.setButtonsEnabled(false);
 
-    switch (action) {
-      case 'attack': {
-        const dmg = Math.max(1, this.player.atk - this.enemy.def + Phaser.Math.Between(-3, 3));
-        this.enemy.hp = Math.max(0, this.enemy.hp - dmg);
-        this.refreshStats();
-        this.addLog(`剑修 攻击！造成 ${dmg} 点伤害`);
-        break;
-      }
-      case 'skill': {
-        if (this.player.mp < 10) {
-          this.addLog('灵力不足！');
-          this.isPlayerTurn = true;
-          this.setButtonsEnabled(true);
-          return;
-        }
-        this.player.mp -= 10;
-        const dmg = Math.max(1, this.player.atk * 1.8 - this.enemy.def + Phaser.Math.Between(-2, 5));
-        this.enemy.hp = Math.max(0, this.enemy.hp - Math.floor(dmg));
-        this.refreshStats();
-        this.addLog(`剑气斩！造成 ${Math.floor(dmg)} 点伤害`);
-        break;
-      }
-      case 'defend':
-        this.addLog('剑修 进入防御姿态');
-        break;
-      case 'flee': {
-        if (Math.random() < 0.5) {
-          this.addLog('逃跑成功！');
-          this.time.delayedCall(800, () => this.endBattle(false));
-          return;
-        }
-        this.addLog('逃跑失败！');
-        break;
-      }
+    if (action === 'flee') {
+      this.player.statuses = this.player.statuses.filter(status => status.type !== 'poison');
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 12);
+      this.player.mp = Math.min(this.player.maxMp, this.player.mp + 8);
+      this.addLog('剑修净息调脉，解除中毒并回复少量 HP/MP。');
+    } else {
+      if (action === 'skill') swordWave(this, this.playerSprite.x - 20, this.playerSprite.y - 35);
+      await lunge(this, this.playerSprite, -45);
+      const result = performPlayerAction(action, this.player, this.enemy);
+      result.logs.forEach(log => this.addLog(log));
+      await hitFlash(this, this.enemySprite);
     }
+    this.refreshStats();
 
-    // 检查敌人是否死亡
     if (this.enemy.hp <= 0) {
       const enemyDefinition = ENEMIES[this.battleData.enemyId] ?? ENEMIES.bamboo_snake;
       this.addLog(`${this.enemy.name} 被击败！获得 ${enemyDefinition.expReward} 经验值`);
@@ -150,11 +132,12 @@ export class BattleScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => this.doEnemyAction());
   }
 
-  private doEnemyAction(): void {
-    const dmg = Math.max(1, this.enemy.atk - this.player.def + Phaser.Math.Between(-2, 3));
-    this.player.hp = Math.max(0, this.player.hp - dmg);
+  private async doEnemyAction(): Promise<void> {
+    await lunge(this, this.enemySprite, 45);
+    const result = performEnemyAction(this.battleData.enemyId, this.enemy, this.player);
+    result.logs.forEach(log => this.addLog(log));
+    await hitFlash(this, this.playerSprite);
     this.refreshStats();
-    this.addLog(`${this.enemy.name} 攻击！造成 ${dmg} 点伤害`);
 
     if (this.player.hp <= 0) {
       this.addLog('你被击败了...');

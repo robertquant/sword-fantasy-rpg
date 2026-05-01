@@ -4,7 +4,8 @@ import { QINGYUN_MAP, type NpcDefinition } from '../data/maps';
 import { DialogueOverlay } from '../systems/dialogueOverlay';
 import { EncounterSystem, isPointInZone } from '../systems/encounterSystem';
 import { applyBattleResult, gameState, getActiveQuest, type BattleResult } from '../systems/gameState';
-import { createActorTextures, drawQingyunMap } from '../systems/mapRenderer';
+import { drawQingyunMap } from '../systems/mapRenderer';
+import { PlayerController } from '../systems/playerController';
 
 interface MapSceneData {
   playerX?: number;
@@ -13,7 +14,6 @@ interface MapSceneData {
 }
 
 const PLAYER_SIZE = 28;
-const MOVE_SPEED = 170;
 export class MapScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -23,6 +23,7 @@ export class MapScene extends Phaser.Scene {
   private hudText!: Phaser.GameObjects.Text;
   private noticeText!: Phaser.GameObjects.Text;
   private dialogue!: DialogueOverlay;
+  private playerController!: PlayerController;
   private encounters = new EncounterSystem();
   private npcSprites: Phaser.Physics.Arcade.Sprite[] = [];
   private bossTriggered = false;
@@ -45,38 +46,30 @@ export class MapScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.fadeIn(350);
-    createActorTextures(this);
     drawQingyunMap(this);
-    this.createPlayer();
-    this.createBlockers();
+    this.createAnimations();
+    this.createPlayer(); this.createBlockers();
     this.createNpcs();
-    this.createInput();
-    this.createHud();
+    this.createInput(); this.createHud();
     this.dialogue = new DialogueOverlay(this);
   }
 
   update(_time: number, delta: number): void {
-    if (this.inputLocked) { this.player.setVelocity(0); if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.advanceDialogue(); return; }
+    if (this.inputLocked) { this.playerController.stop(); if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.advanceDialogue(); return; }
+    this.playerController.update(this.cursors, this.wasd);
 
-    const velocity = new Phaser.Math.Vector2(0, 0);
-    if (this.cursors.left.isDown || this.wasd.A.isDown) velocity.x -= 1;
-    if (this.cursors.right.isDown || this.wasd.D.isDown) velocity.x += 1;
-    if (this.cursors.up.isDown || this.wasd.W.isDown) velocity.y -= 1;
-    if (this.cursors.down.isDown || this.wasd.S.isDown) velocity.y += 1;
-    velocity.normalize().scale(MOVE_SPEED);
-    this.player.setVelocity(velocity.x, velocity.y);
-
-    this.trackEncounterDistance();
-    this.trackBossZone();
+    this.trackEncounterDistance(); this.trackBossZone();
     if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.tryInteract();
     if (Phaser.Input.Keyboard.JustDown(this.battleKey)) this.enterBattle('bamboo_snake');
     this.refreshHud();
   }
 
   private createPlayer(): void {
-    this.player = this.physics.add.sprite(this.startX, this.startY, 'hero');
+    this.player = this.physics.add.sprite(this.startX, this.startY, 'hero-walk', 0);
+    this.player.setDisplaySize(42, 42);
     this.player.setCollideWorldBounds(true);
     this.player.body?.setSize(PLAYER_SIZE, PLAYER_SIZE);
+    this.playerController = new PlayerController(this.player);
     this.physics.world.setBounds(0, 0, QINGYUN_MAP.width, QINGYUN_MAP.height);
     this.cameras.main.setBounds(0, 0, QINGYUN_MAP.width, QINGYUN_MAP.height);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -95,6 +88,7 @@ export class MapScene extends Phaser.Scene {
   private createNpcs(): void {
     QINGYUN_MAP.npcs.forEach(npc => {
       const sprite = this.physics.add.staticSprite(npc.x, npc.y, npc.id === 'village_elder' ? 'elder' : 'hero');
+      sprite.setDisplaySize(44, 44);
       sprite.setData('npc', npc);
       this.npcSprites.push(sprite);
       this.add.text(npc.x, npc.y - 34, npc.name, { fontSize: '13px', color: '#fff' }).setOrigin(0.5);
@@ -111,6 +105,15 @@ export class MapScene extends Phaser.Scene {
     };
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.battleKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+  }
+
+  private createAnimations(): void {
+    const rows = { down: 0, left: 4, right: 8, up: 12 };
+    Object.entries(rows).forEach(([direction, start]) => {
+      const key = `hero-walk-${direction}`;
+      if (this.anims.exists(key)) return;
+      this.anims.create({ key, frames: this.anims.generateFrameNumbers('hero-walk', { start, end: start + 3 }), frameRate: 8, repeat: -1 });
+    });
   }
 
   private createHud(): void {

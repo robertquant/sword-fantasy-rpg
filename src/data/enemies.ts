@@ -48,5 +48,6 @@ export const createEnemyFighter = (enemyId: string): Fighter => {
     atk: enemy.atk,
     def: enemy.def,
     spd: enemy.spd,
+    statuses: [],
   };
 };

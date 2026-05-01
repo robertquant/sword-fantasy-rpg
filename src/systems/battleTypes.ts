@@ -16,6 +16,7 @@ export interface Fighter {
   atk: number;
   def: number;
   spd: number;
+  statuses: StatusEffect[];
 }
 
 export interface EnemyDefinition {
@@ -37,3 +38,11 @@ export interface StatusBar {
 }
 
 export type BattleAction = 'attack' | 'skill' | 'defend' | 'flee';
+
+export type StatusEffectType = 'poison' | 'defend' | 'evasion' | 'weaken';
+
+export interface StatusEffect {
+  type: StatusEffectType;
+  turns: number;
+  power: number;
+}
