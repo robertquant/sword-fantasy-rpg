@@ -39,6 +39,9 @@ export class MapScene extends Phaser.Scene {
   init(data: MapSceneData): void {
     this.startX = data.playerX ?? QINGYUN_MAP.playerSpawn.x;
     this.startY = data.playerY ?? QINGYUN_MAP.playerSpawn.y;
+    this.inputLocked = false;
+    this.npcSprites = [];
+    this.distanceSinceEncounter = 0;
     if (data.battleResult) this.handleBattleResult(data.battleResult);
   }
 
