@@ -2,6 +2,7 @@
   "name": "sword-fantasy-rpg",
   "version": "0.1.0",
   "description": "剑道幻境 - 2D回合制RPG",
+  "packageManager": "pnpm@10.19.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
