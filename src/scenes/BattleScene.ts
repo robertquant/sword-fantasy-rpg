@@ -176,6 +176,7 @@ export class BattleScene extends Phaser.Scene {
       this.scene.start(this.battleData.returnMap || 'MapScene', {
         playerX: this.battleData.playerX,
         playerY: this.battleData.playerY,
+        chapterIndex: this.battleData.chapterIndex,
         battleResult: {
           playerWon,
           enemyId: enemyDefinition.id,

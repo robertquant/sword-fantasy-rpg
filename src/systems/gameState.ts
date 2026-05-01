@@ -25,6 +25,8 @@ export interface GameState {
   bambooDepthUnlocked: boolean;
   herbQuest: HerbQuestState;
   inventory: Inventory;
+  mainChapter: number;
+  storyComplete: boolean;
 }
 
 export interface HerbQuestState {
@@ -56,6 +58,8 @@ export const gameState: GameState = {
   bambooDepthUnlocked: false,
   herbQuest: { accepted: false, completed: false, turnedIn: false, gatheredHerbIds: [] },
   inventory: createInventory(),
+  mainChapter: 1,
+  storyComplete: false,
 };
 
 export const getActiveQuest = (): QuestState => gameState.quests.find(quest => quest.id === gameState.activeQuestId) ?? gameState.quests[0];
@@ -72,6 +76,10 @@ export const turnInActiveQuest = (): void => {
   if (quest.id === 'clear_bamboo_snakes') {
     gameState.bambooDepthUnlocked = true;
     gameState.activeQuestId = 'bamboo_demon_trial';
+    gameState.mainChapter = Math.max(gameState.mainChapter, 2);
+  }
+  if (quest.id === 'bamboo_demon_trial') {
+    gameState.mainChapter = Math.max(gameState.mainChapter, 3);
   }
 };
 
@@ -122,6 +130,15 @@ export const turnInHerbQuest = (): boolean => {
   addItem(gameState.inventory, 'antidote_powder', 1);
   gameState.player.exp += 25;
   return true;
+};
+
+export const completeChapter = (chapterIndex: number): void => {
+  if (chapterIndex !== gameState.mainChapter || gameState.storyComplete) return;
+  if (chapterIndex >= 10) {
+    gameState.storyComplete = true;
+    return;
+  }
+  gameState.mainChapter += 1;
 };
 
 function createQuest(id: string, title: string, targetEnemyId: string, requiredKills: number, accepted: boolean): QuestState {

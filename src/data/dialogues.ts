@@ -35,7 +35,10 @@ export const getElderDialogue = (): string[] => {
   }
 
   if (quest.turnedIn && quest.id === 'bamboo_demon_trial') {
-    return ['村长：青云村会记得你的功劳。后续区域还在建设中。'];
+    return [
+      '村长：青云村会记得你的功劳。可竹妖遗下的黑气，指向更远的山道。',
+      '村长：若你准备继续主线，就按 M 键追查灵脉异变。',
+    ];
   }
 
   return [

@@ -5,7 +5,7 @@ import { formatInventoryLine } from './inventory';
 export const formatMapHud = (activeQuest: QuestState): string => {
   const { player } = gameState;
   const questLine = getQuestLine(activeQuest);
-  return `等级 ${player.level}  经验 ${player.exp}/${player.nextLevelExp}  金 ${player.gold}\n${questLine}\n${formatInventoryLine(gameState.inventory)}`;
+  return `等级 ${player.level}  经验 ${player.exp}/${player.nextLevelExp}  金 ${player.gold}\n主线章回 ${gameState.storyComplete ? '已完成' : gameState.mainChapter}/10\n${questLine}\n${formatInventoryLine(gameState.inventory)}`;
 };
 
 const getQuestLine = (activeQuest: QuestState): string => {

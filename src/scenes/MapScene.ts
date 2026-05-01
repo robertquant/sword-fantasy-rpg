@@ -24,7 +24,9 @@ export class MapScene extends Phaser.Scene {
   private wasd!: Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
   private interactKey!: Phaser.Input.Keyboard.Key;
   private battleKey!: Phaser.Input.Keyboard.Key;
+  private storyKey!: Phaser.Input.Keyboard.Key;
   private hudText!: Phaser.GameObjects.Text;
+  private storyText!: Phaser.GameObjects.Text;
   private noticeText!: Phaser.GameObjects.Text;
   private dialogue!: DialogueOverlay;
   private playerController!: PlayerController;
@@ -55,7 +57,7 @@ export class MapScene extends Phaser.Scene {
     audioManager.unlock(this); audioManager.startMusic('map');
     drawQingyunMap(this); this.createAnimations();
     this.createPlayer(); this.createBlockers();
-    this.createNpcs(); this.createHerbs(); this.createInput(); this.createHud();
+    this.createNpcs(); this.herbNodes = createHerbNodes(this); this.createInput(); this.createHud();
     this.dialogue = new DialogueOverlay(this);
   }
 
@@ -66,6 +68,7 @@ export class MapScene extends Phaser.Scene {
     this.trackEncounterDistance(); this.trackBossZone();
     if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.tryInteract();
     if (Phaser.Input.Keyboard.JustDown(this.battleKey)) this.enterBattle('bamboo_snake');
+    if (Phaser.Input.Keyboard.JustDown(this.storyKey)) this.scene.start('ChapterScene');
     this.refreshHud();
   }
 
@@ -92,10 +95,6 @@ export class MapScene extends Phaser.Scene {
 
   private createNpcs(): void { this.npcSprites = createNpcSprites(this, QINGYUN_MAP.npcs); }
 
-  private createHerbs(): void {
-    this.herbNodes = createHerbNodes(this);
-  }
-
   private createInput(): void {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = {
@@ -106,6 +105,7 @@ export class MapScene extends Phaser.Scene {
     };
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.battleKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+    this.storyKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.M);
   }
 
   private createAnimations(): void {
@@ -120,10 +120,10 @@ export class MapScene extends Phaser.Scene {
   private createHud(): void {
     this.hudText = this.add.text(16, 16, '', { fontSize: '16px', color: '#fff', backgroundColor: '#0008', padding: { x: 10, y: 8 } });
     this.noticeText = this.add.text(400, 560, '', { fontSize: '16px', color: '#fff', backgroundColor: '#0008', padding: { x: 12, y: 8 } }).setOrigin(0.5);
-    this.hudText.setScrollFactor(0);
-    this.noticeText.setScrollFactor(0);
+    this.storyText = this.add.text(16, 104, '[ 主线 ]', { fontSize: '15px', color: '#f0c987', backgroundColor: '#0008', padding: { x: 10, y: 6 } }).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('ChapterScene'));
+    this.hudText.setScrollFactor(0); this.storyText.setScrollFactor(0); this.noticeText.setScrollFactor(0);
     this.refreshHud();
-    this.showNotice('空格与村民对话，进入东边竹林会随机遇敌。');
+    this.showNotice('空格与村民对话，M 键推进主线章回。');
   }
 
   private trackEncounterDistance(): void {

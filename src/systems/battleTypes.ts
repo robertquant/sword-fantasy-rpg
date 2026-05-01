@@ -5,6 +5,7 @@ export interface BattleData {
   returnMap: string;
   playerX: number;
   playerY: number;
+  chapterIndex?: number;
 }
 
 export interface Fighter {
