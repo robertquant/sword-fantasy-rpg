@@ -6,11 +6,15 @@
 - [x] 项目初始化
 - [x] 设计文档
 - [x] 故事文案框架
+- [x] Phaser 基础场景链路 (BootScene → MenuScene → MapScene → BattleScene)
+- [x] 临时地图移动 (WASD/方向键)
+- [x] 测试战斗入口 (B 键)
+- [x] 简单战斗原型（攻击/技能/防御/逃跑）
 
 ### 进行中 🔄
-- [ ] Phaser 场景搭建 (BootScene → MapScene → BattleScene)
-- [ ] 地图加载 + 角色移动 (WASD/方向键)
-- [ ] 简单战斗系统
+- [ ] 正式地图加载 + 碰撞层
+- [ ] 角色精灵与动画
+- [ ] 战斗 UI 刷新与数据拆分
 
 ### 待开始 ⏳
 - [ ] 完整回合制战斗

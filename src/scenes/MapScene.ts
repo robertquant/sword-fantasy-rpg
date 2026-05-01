@@ -4,9 +4,17 @@ export class MapScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
+  private battleKey!: Phaser.Input.Keyboard.Key;
+  private startX = 400;
+  private startY = 300;
 
   constructor() {
     super({ key: 'MapScene' });
+  }
+
+  init(data: { playerX?: number; playerY?: number }): void {
+    this.startX = data.playerX ?? 400;
+    this.startY = data.playerY ?? 300;
   }
 
   create(): void {
@@ -16,7 +24,7 @@ export class MapScene extends Phaser.Scene {
     this.add.rectangle(400, 300, 800, 600, 0x2d5a3d);
 
     // 临时玩家（后续替换为精灵表）
-    this.player = this.add.rectangle(400, 300, 28, 28, 0xe94560);
+    this.player = this.add.rectangle(this.startX, this.startY, 28, 28, 0xe94560);
 
     // 键盘输入
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -26,6 +34,7 @@ export class MapScene extends Phaser.Scene {
       S: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       D: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
+    this.battleKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.B);
 
     // 临时遇敌区域
     const encounterZone = this.add.rectangle(300, 200, 120, 120, 0x3a7d44, 0.5);
@@ -50,7 +59,7 @@ export class MapScene extends Phaser.Scene {
     body.setY(Phaser.Math.Clamp(body.y + vy, 14, 586));
 
     // 按 B 键触发测试战斗
-    if (Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey('B'))) {
+    if (Phaser.Input.Keyboard.JustDown(this.battleKey)) {
       this.enterBattle();
     }
   }
