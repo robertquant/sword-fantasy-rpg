@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { getElderDialogue } from '../data/dialogues';
-import { QINGYUN_MAP, type NpcDefinition, type RectDefinition } from '../data/maps';
+import { QINGYUN_MAP, type NpcDefinition } from '../data/maps';
 import { DialogueOverlay } from '../systems/dialogueOverlay';
-import { applyBattleResult, gameState, type BattleResult } from '../systems/gameState';
+import { EncounterSystem, isPointInZone } from '../systems/encounterSystem';
+import { applyBattleResult, gameState, getActiveQuest, type BattleResult } from '../systems/gameState';
 import { createActorTextures, drawQingyunMap } from '../systems/mapRenderer';
 
 interface MapSceneData {
@@ -13,9 +14,6 @@ interface MapSceneData {
 
 const PLAYER_SIZE = 28;
 const MOVE_SPEED = 170;
-const ENCOUNTER_STEP_DISTANCE = 130;
-const ENCOUNTER_CHANCE = 0.18;
-
 export class MapScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -25,9 +23,9 @@ export class MapScene extends Phaser.Scene {
   private hudText!: Phaser.GameObjects.Text;
   private noticeText!: Phaser.GameObjects.Text;
   private dialogue!: DialogueOverlay;
+  private encounters = new EncounterSystem();
   private npcSprites: Phaser.Physics.Arcade.Sprite[] = [];
-  private distanceSinceEncounter = 0;
-  private lastPosition = new Phaser.Math.Vector2();
+  private bossTriggered = false;
   private startX = QINGYUN_MAP.playerSpawn.x;
   private startY = QINGYUN_MAP.playerSpawn.y;
   private inputLocked = false;
@@ -41,7 +39,7 @@ export class MapScene extends Phaser.Scene {
     this.startY = data.playerY ?? QINGYUN_MAP.playerSpawn.y;
     this.inputLocked = false;
     this.npcSprites = [];
-    this.distanceSinceEncounter = 0;
+    this.bossTriggered = false;
     if (data.battleResult) this.handleBattleResult(data.battleResult);
   }
 
@@ -58,11 +56,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    if (this.inputLocked) {
-      this.player.setVelocity(0);
-      if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.advanceDialogue();
-      return;
-    }
+    if (this.inputLocked) { this.player.setVelocity(0); if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.advanceDialogue(); return; }
 
     const velocity = new Phaser.Math.Vector2(0, 0);
     if (this.cursors.left.isDown || this.wasd.A.isDown) velocity.x -= 1;
@@ -73,6 +67,7 @@ export class MapScene extends Phaser.Scene {
     this.player.setVelocity(velocity.x, velocity.y);
 
     this.trackEncounterDistance();
+    this.trackBossZone();
     if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.tryInteract();
     if (Phaser.Input.Keyboard.JustDown(this.battleKey)) this.enterBattle('bamboo_snake');
     this.refreshHud();
@@ -85,7 +80,7 @@ export class MapScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, QINGYUN_MAP.width, QINGYUN_MAP.height);
     this.cameras.main.setBounds(0, 0, QINGYUN_MAP.width, QINGYUN_MAP.height);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
-    this.lastPosition.set(this.player.x, this.player.y);
+    this.encounters.reset(this.player.x, this.player.y);
   }
 
   private createBlockers(): void {
@@ -128,18 +123,21 @@ export class MapScene extends Phaser.Scene {
   }
 
   private trackEncounterDistance(): void {
-    const current = new Phaser.Math.Vector2(this.player.x, this.player.y);
-    const moved = Phaser.Math.Distance.BetweenPoints(this.lastPosition, current);
-    this.lastPosition.copy(current);
-    if (moved <= 0 || !this.isInEncounterZone(QINGYUN_MAP.encounterZone)) return;
-    this.distanceSinceEncounter += moved;
-    if (this.distanceSinceEncounter < ENCOUNTER_STEP_DISTANCE) return;
-    this.distanceSinceEncounter = 0;
-    if (Math.random() < ENCOUNTER_CHANCE) this.enterBattle('bamboo_snake');
+    if (this.encounters.shouldTriggerRandom(this.player.x, this.player.y, QINGYUN_MAP.encounterZone, QINGYUN_MAP.bossZone)) this.enterBattle('bamboo_snake');
   }
 
-  private isInEncounterZone(zone: RectDefinition): boolean {
-    return this.player.x >= zone.x && this.player.x <= zone.x + zone.width && this.player.y >= zone.y && this.player.y <= zone.y + zone.height;
+  private trackBossZone(): void {
+    const quest = getActiveQuest();
+    if (!isPointInZone(this.player.x, this.player.y, QINGYUN_MAP.bossZone) || this.bossTriggered) return;
+    if (!gameState.bambooDepthUnlocked) {
+      this.showNotice('竹林深处妖气太重，先回村长处复命。');
+      return;
+    }
+    if (quest.id === 'bamboo_demon_trial' && quest.accepted && !quest.completed) {
+      this.bossTriggered = true;
+      this.showNotice('竹影忽然合拢，竹妖现身！');
+      this.time.delayedCall(600, () => this.enterBattle('bamboo_demon'));
+    }
   }
 
   private tryInteract(): void {
@@ -153,7 +151,6 @@ export class MapScene extends Phaser.Scene {
     this.inputLocked = true;
     this.player.setVelocity(0);
     this.dialogue.open(lines);
-    if (!gameState.quest.accepted) gameState.quest.accepted = true;
   }
 
   private advanceDialogue(): void {
@@ -163,8 +160,9 @@ export class MapScene extends Phaser.Scene {
   }
 
   private refreshHud(): void {
-    const { player, quest } = gameState;
-    const questLine = quest.accepted ? `${quest.title}: ${quest.currentKills}/${quest.requiredKills}${quest.completed ? ' 已完成' : ''}` : '主线: 与村长对话';
+    const { player } = gameState;
+    const activeQuest = getActiveQuest();
+    const questLine = activeQuest.accepted ? `${activeQuest.title}: ${activeQuest.currentKills}/${activeQuest.requiredKills}${activeQuest.completed ? ' 已完成' : ''}` : '主线: 与村长对话';
     this.hudText.setText(`等级 ${player.level}  经验 ${player.exp}/${player.nextLevelExp}  金 ${player.gold}\n${questLine}`);
   }
 
@@ -177,8 +175,8 @@ export class MapScene extends Phaser.Scene {
     const leveledUp = applyBattleResult(result);
     if (!result.playerWon) return;
     this.time.delayedCall(450, () => {
-      const reward = `击败竹叶蛇，获得 ${result.expReward} 经验和 ${result.goldReward} 金。`;
-      if (gameState.quest.completed) this.showNotice(`${reward} 任务已完成，回村长处复命。`);
+      const reward = `击败敌人，获得 ${result.expReward} 经验和 ${result.goldReward} 金。`;
+      if (getActiveQuest().completed) this.showNotice(`${reward} 任务已完成，回村长处复命。`);
       else this.showNotice(leveledUp ? `${reward} 等级提升！` : reward);
     });
   }

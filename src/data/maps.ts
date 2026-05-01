@@ -18,6 +18,7 @@ export interface MapDefinition {
   height: number;
   playerSpawn: { x: number; y: number };
   encounterZone: RectDefinition;
+  bossZone: RectDefinition;
   blockers: RectDefinition[];
   npcs: NpcDefinition[];
 }
@@ -27,6 +28,7 @@ export const QINGYUN_MAP: MapDefinition = {
   height: 1200,
   playerSpawn: { x: 420, y: 650 },
   encounterZone: { x: 1050, y: 190, width: 430, height: 650 },
+  bossZone: { x: 1260, y: 260, width: 180, height: 180 },
   blockers: [
     { x: 150, y: 115, width: 270, height: 190 },
     { x: 520, y: 120, width: 180, height: 140 },
@@ -42,4 +44,3 @@ export const QINGYUN_MAP: MapDefinition = {
     { id: 'village_elder', name: '村长', x: 500, y: 575, color: 0xf0c987 },
   ],
 };
-
