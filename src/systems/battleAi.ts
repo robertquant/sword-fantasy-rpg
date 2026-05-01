@@ -28,6 +28,7 @@ export const performEnemyAction = (enemyId: string, enemy: Fighter, player: Figh
     return { logs: [...logs, `竹叶蛇使用毒牙，造成 ${outcome.damage} 点伤害，你中毒了。`], defeated: player.hp <= 0 };
   }
   if (enemyId === 'bamboo_demon') return bambooDemonAction(enemy, player, logs);
+  if (enemyId === 'mountain_imp') return mountainImpAction(enemy, player, logs);
   const outcome = dealDamage(enemy, player, enemy.atk + 2);
   return { logs: [...logs, `${enemy.name} 攻击，造成 ${outcome.damage} 点伤害。`], defeated: player.hp <= 0 };
 };
@@ -54,3 +55,13 @@ const bambooDemonAction = (enemy: Fighter, player: Fighter, logs: string[]): Tur
   return { logs: [...logs, `竹妖刺出竹矛，造成 ${outcome.damage} 点伤害。`], defeated: player.hp <= 0 };
 };
 
+const mountainImpAction = (enemy: Fighter, player: Fighter, logs: string[]): TurnResult => {
+  const roll = Phaser.Math.Between(1, 100);
+  if (roll <= 45) {
+    const outcome = dealDamage(enemy, player, enemy.atk + 8);
+    addStatus(player, 'weaken', 1, 25);
+    return { logs: [...logs, `山魈踏碎石阶扑来，造成 ${outcome.damage} 点伤害，你的剑势被压制。`], defeated: player.hp <= 0 };
+  }
+  const outcome = dealDamage(enemy, player, enemy.atk + 4);
+  return { logs: [...logs, `山魈掷出妖化碎石，造成 ${outcome.damage} 点伤害。`], defeated: player.hp <= 0 };
+};

@@ -33,7 +33,7 @@ export class ChapterScene extends Phaser.Scene {
   create(): void {
     audioManager.unlock(this);
     audioManager.startMusic(gameState.storyComplete ? 'title' : 'map');
-    this.add.rectangle(400, 300, 800, 600, 0x111827, 1);
+    this.addChapterBackdrop();
     this.add.text(400, 90, '主线章回', { fontSize: '34px', color: '#f0c987' }).setOrigin(0.5);
     this.add.text(400, 150, `当前进度：第 ${gameState.mainChapter} 章`, { fontSize: '18px', color: '#d7f7c2' }).setOrigin(0.5);
     this.dialogue = new DialogueOverlay(this);
@@ -49,6 +49,12 @@ export class ChapterScene extends Phaser.Scene {
     if (!chapter) { this.scene.start('MapScene'); return; }
     if (this.chapterIndex !== gameState.mainChapter) { this.scene.start('ChapterScene', { chapterIndex: gameState.mainChapter }); return; }
     this.scene.start('BattleScene', { enemyId: chapter.enemyId, returnMap: 'ChapterScene', playerX: 420, playerY: 650, chapterIndex: chapter.index });
+  }
+
+  private addChapterBackdrop(): void {
+    const chapter = getChapter(this.chapterIndex);
+    if (chapter) this.add.image(400, 300, chapter.sceneImage).setDisplaySize(800, 600);
+    this.add.rectangle(400, 300, 800, 600, 0x07111a, 0.58);
   }
 
   private getNextLine(): string {

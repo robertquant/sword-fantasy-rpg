@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { BATTLE_ACTIONS } from '../data/battleActions';
+import { getBattleback, getEnemyVisual } from '../data/battlePresentation';
+import { getChapter } from '../data/chapters';
 import { ENEMIES, createEnemyFighter } from '../data/enemies';
 import { createStarterPlayer } from '../data/player';
 import { performEnemyAction, performPlayerAction } from '../systems/battleAi';
@@ -44,13 +46,13 @@ export class BattleScene extends Phaser.Scene {
     const enemyDefinition = ENEMIES[this.battleData.enemyId] ?? ENEMIES.bamboo_snake;
 
     // 战斗背景
-    this.add.image(400, 300, 'battleback-bamboo').setDisplaySize(800, 600);
+    this.add.image(400, 300, getBattleback(this.battleData.chapterIndex)).setDisplaySize(800, 600);
     this.add.rectangle(400, 300, 800, 600, 0x06120d, 0.28);
-    this.add.text(400, 38, '幽竹林遭遇战', { fontSize: '22px', color: '#d7f7c2' }).setOrigin(0.5);
+    this.add.text(400, 38, getChapter(this.battleData.chapterIndex ?? 0)?.battleTitle ?? '幽竹林遭遇战', { fontSize: '22px', color: '#d7f7c2' }).setOrigin(0.5);
 
     // 敌人精灵
-    const enemyKey = this.battleData.enemyId === 'bamboo_demon' ? 'enemy-bamboo-demon' : 'enemy-bamboo-snake';
-    this.enemySprite = this.add.image(400, 150, enemyKey).setDisplaySize(this.battleData.enemyId === 'bamboo_demon' ? 150 : 96, this.battleData.enemyId === 'bamboo_demon' ? 150 : 96);
+    const visual = getEnemyVisual(this.battleData.enemyId);
+    this.enemySprite = this.add.image(400, 150, visual.texture).setDisplaySize(visual.size, visual.size);
     this.add.text(400, 110, this.enemy.name, { fontSize: '16px', color: '#fff' }).setOrigin(0.5);
 
     // 玩家精灵
