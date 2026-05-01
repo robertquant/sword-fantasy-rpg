@@ -26,6 +26,8 @@ export interface EnemyDefinition {
   def: number;
   spd: number;
   color: number;
+  expReward: number;
+  goldReward: number;
 }
 
 export interface StatusBar {

@@ -1,14 +1,8 @@
 import Phaser from 'phaser';
+import { BATTLE_ACTIONS } from '../data/battleActions';
 import { ENEMIES, createEnemyFighter } from '../data/enemies';
 import { createStarterPlayer } from '../data/player';
 import type { BattleAction, BattleData, Fighter, StatusBar } from '../systems/battleTypes';
-
-const ACTIONS: { label: string; action: BattleAction; color: string }[] = [
-  { label: '⚔ 攻击', action: 'attack', color: '#e94560' },
-  { label: '✨ 技能', action: 'skill', color: '#3498db' },
-  { label: '🛡 防御', action: 'defend', color: '#2ecc71' },
-  { label: '🏃 逃跑', action: 'flee', color: '#95a5a6' },
-];
 
 export class BattleScene extends Phaser.Scene {
   private player!: Fighter;
@@ -44,6 +38,8 @@ export class BattleScene extends Phaser.Scene {
 
     // 战斗背景
     this.add.rectangle(400, 300, 800, 600, 0x1a1a2e);
+    this.add.rectangle(400, 150, 800, 210, 0x203a32, 0.45);
+    this.add.text(400, 38, '幽竹林遭遇战', { fontSize: '22px', color: '#d7f7c2' }).setOrigin(0.5);
 
     // 敌人精灵（临时方块，后续替换）
     this.add.rectangle(400, 150, 64, 64, enemyDefinition.color);
@@ -62,7 +58,7 @@ export class BattleScene extends Phaser.Scene {
     this.turnText = this.add.text(400, 240, '你的回合', { fontSize: '18px', color: '#f1c40f' }).setOrigin(0.5);
 
     // 操作按钮
-    ACTIONS.forEach((a, i) => {
+    BATTLE_ACTIONS.forEach((a, i) => {
       const btn = this.add.text(100 + i * 170, 530, a.label, {
         fontSize: '20px', color: a.color,
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -143,7 +139,8 @@ export class BattleScene extends Phaser.Scene {
 
     // 检查敌人是否死亡
     if (this.enemy.hp <= 0) {
-      this.addLog(`${this.enemy.name} 被击败！获得 30 经验值`);
+      const enemyDefinition = ENEMIES[this.battleData.enemyId] ?? ENEMIES.bamboo_snake;
+      this.addLog(`${this.enemy.name} 被击败！获得 ${enemyDefinition.expReward} 经验值`);
       this.time.delayedCall(1000, () => this.endBattle(false, true));
       return;
     }
@@ -184,9 +181,16 @@ export class BattleScene extends Phaser.Scene {
       this.turnText.setText('战斗胜利！').setColor('#2ecc71');
     }
     this.time.delayedCall(2000, () => {
+      const enemyDefinition = ENEMIES[this.battleData.enemyId] ?? ENEMIES.bamboo_snake;
       this.scene.start(this.battleData.returnMap || 'MapScene', {
         playerX: this.battleData.playerX,
         playerY: this.battleData.playerY,
+        battleResult: {
+          playerWon,
+          enemyId: enemyDefinition.id,
+          expReward: enemyDefinition.expReward,
+          goldReward: enemyDefinition.goldReward,
+        },
       });
     });
   }
