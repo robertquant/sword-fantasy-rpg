@@ -6,7 +6,7 @@ export const createStarterPlayer = (): Fighter => ({
   maxHp: 100,
   mp: 50,
   maxMp: 50,
-  atk: 15,
+  atk: 14,
   def: 8,
   spd: 10,
   statuses: [],

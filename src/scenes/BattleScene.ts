@@ -4,6 +4,7 @@ import { ENEMIES, createEnemyFighter } from '../data/enemies';
 import { createStarterPlayer } from '../data/player';
 import { performEnemyAction, performPlayerAction } from '../systems/battleAi';
 import { hitFlash, lunge, swordWave } from '../systems/battleEffects';
+import { audioManager } from '../systems/audioManager';
 import type { BattleAction, BattleData, Fighter, StatusBar } from '../systems/battleTypes';
 
 export class BattleScene extends Phaser.Scene {
@@ -35,6 +36,8 @@ export class BattleScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.fadeIn(300);
+    audioManager.unlock(this);
+    audioManager.startMusic('battle');
 
     this.player = createStarterPlayer();
     this.enemy = createEnemyFighter(this.battleData.enemyId);
@@ -110,12 +113,15 @@ export class BattleScene extends Phaser.Scene {
       this.player.statuses = this.player.statuses.filter(status => status.type !== 'poison');
       this.player.hp = Math.min(this.player.maxHp, this.player.hp + 12);
       this.player.mp = Math.min(this.player.maxMp, this.player.mp + 8);
+      audioManager.playSfx('poison');
       this.addLog('剑修净息调脉，解除中毒并回复少量 HP/MP。');
     } else {
-      if (action === 'skill') swordWave(this, this.playerSprite.x - 20, this.playerSprite.y - 35);
-      await lunge(this, this.playerSprite, -45);
+      audioManager.playSfx(action === 'skill' ? 'skill' : 'attack');
+      if (action === 'skill') swordWave(this, this.playerSprite.x, this.playerSprite.y - 45);
+      await lunge(this, this.playerSprite, 0, -45);
       const result = performPlayerAction(action, this.player, this.enemy);
       result.logs.forEach(log => this.addLog(log));
+      audioManager.playSfx('hit');
       await hitFlash(this, this.enemySprite);
     }
     this.refreshStats();
@@ -133,9 +139,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private async doEnemyAction(): Promise<void> {
-    await lunge(this, this.enemySprite, 45);
+    await lunge(this, this.enemySprite, 0, 45);
     const result = performEnemyAction(this.battleData.enemyId, this.enemy, this.player);
     result.logs.forEach(log => this.addLog(log));
+    audioManager.playSfx(result.logs.some(log => log.includes('中毒')) ? 'poison' : 'hit');
     await hitFlash(this, this.playerSprite);
     this.refreshStats();
 
@@ -162,6 +169,7 @@ export class BattleScene extends Phaser.Scene {
       this.turnText.setText('战斗失败...').setColor('#e74c3c');
     } else {
       this.turnText.setText('战斗胜利！').setColor('#2ecc71');
+      audioManager.playSfx('win');
     }
     this.time.delayedCall(2000, () => {
       const enemyDefinition = ENEMIES[this.battleData.enemyId] ?? ENEMIES.bamboo_snake;

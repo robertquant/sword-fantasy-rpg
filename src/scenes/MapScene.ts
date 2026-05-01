@@ -6,6 +6,7 @@ import { EncounterSystem, isPointInZone } from '../systems/encounterSystem';
 import { applyBattleResult, gameState, getActiveQuest, type BattleResult } from '../systems/gameState';
 import { drawQingyunMap } from '../systems/mapRenderer';
 import { PlayerController } from '../systems/playerController';
+import { audioManager } from '../systems/audioManager';
 
 interface MapSceneData {
   playerX?: number;
@@ -46,11 +47,10 @@ export class MapScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.fadeIn(350);
-    drawQingyunMap(this);
-    this.createAnimations();
+    audioManager.unlock(this); audioManager.startMusic('map');
+    drawQingyunMap(this); this.createAnimations();
     this.createPlayer(); this.createBlockers();
-    this.createNpcs();
-    this.createInput(); this.createHud();
+    this.createNpcs(); this.createInput(); this.createHud();
     this.dialogue = new DialogueOverlay(this);
   }
 
@@ -138,8 +138,7 @@ export class MapScene extends Phaser.Scene {
     }
     if (quest.id === 'bamboo_demon_trial' && quest.accepted && !quest.completed) {
       this.bossTriggered = true;
-      this.showNotice('竹影忽然合拢，竹妖现身！');
-      this.time.delayedCall(600, () => this.enterBattle('bamboo_demon'));
+      this.showNotice('竹影忽然合拢，竹妖现身！'); this.time.delayedCall(600, () => this.enterBattle('bamboo_demon'));
     }
   }
 
@@ -151,8 +150,8 @@ export class MapScene extends Phaser.Scene {
   }
 
   private openDialogue(lines: string[]): void {
-    this.inputLocked = true;
-    this.player.setVelocity(0);
+    this.inputLocked = true; this.player.setVelocity(0);
+    audioManager.playSfx('select');
     this.dialogue.open(lines);
   }
 
@@ -187,6 +186,7 @@ export class MapScene extends Phaser.Scene {
   private enterBattle(enemyId: string): void {
     this.inputLocked = true;
     this.player.setVelocity(0);
+    audioManager.playSfx('select');
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.time.delayedCall(300, () => {
       this.scene.start('BattleScene', {

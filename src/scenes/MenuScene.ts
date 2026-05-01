@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { audioManager } from '../systems/audioManager';
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -7,6 +8,8 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.cameras.main;
+    audioManager.unlock(this);
+    audioManager.startMusic('title');
     this.add.image(width / 2, height / 2, 'title-background').setDisplaySize(width, height);
     this.add.rectangle(width / 2, height / 2, width, height, 0x07110f, 0.25);
 
@@ -39,9 +42,10 @@ export class MenuScene extends Phaser.Scene {
       padding: { x: 14, y: 8 },
     }).setOrigin(0.5);
 
-    startBtn.on('pointerover', () => startBtn.setStyle({ backgroundColor: '#ffe0a6' }));
+    startBtn.on('pointerover', () => { audioManager.playSfx('select'); startBtn.setStyle({ backgroundColor: '#ffe0a6' }); });
     startBtn.on('pointerout', () => startBtn.setStyle({ backgroundColor: '#f0c987' }));
     startBtn.on('pointerdown', () => {
+      audioManager.playSfx('select');
       this.cameras.main.fadeOut(500, 0, 0, 0);
       this.time.delayedCall(500, () => this.scene.start('MapScene'));
     });
