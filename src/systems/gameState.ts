@@ -1,3 +1,5 @@
+import { addItem, createInventory, removeItem, type Inventory } from './inventory';
+
 export interface QuestState {
   id: string;
   title: string;
@@ -21,6 +23,15 @@ export interface GameState {
   quests: QuestState[];
   activeQuestId: string;
   bambooDepthUnlocked: boolean;
+  herbQuest: HerbQuestState;
+  inventory: Inventory;
+}
+
+export interface HerbQuestState {
+  accepted: boolean;
+  completed: boolean;
+  turnedIn: boolean;
+  gatheredHerbIds: string[];
 }
 
 export interface BattleResult {
@@ -43,6 +54,8 @@ export const gameState: GameState = {
   ],
   activeQuestId: 'clear_bamboo_snakes',
   bambooDepthUnlocked: false,
+  herbQuest: { accepted: false, completed: false, turnedIn: false, gatheredHerbIds: [] },
+  inventory: createInventory(),
 };
 
 export const getActiveQuest = (): QuestState => gameState.quests.find(quest => quest.id === gameState.activeQuestId) ?? gameState.quests[0];
@@ -83,6 +96,32 @@ export const applyBattleResult = (result: BattleResult): boolean => {
   }
 
   return leveledUp;
+};
+
+export const startHerbQuest = (): boolean => {
+  const snakeQuest = gameState.quests.find(quest => quest.id === 'clear_bamboo_snakes');
+  if (!snakeQuest?.turnedIn || gameState.herbQuest.accepted) return false;
+  gameState.herbQuest.accepted = true;
+  return true;
+};
+
+export const gatherHerb = (herbId: string): boolean => {
+  const quest = gameState.herbQuest;
+  if (!quest.accepted || quest.completed || quest.gatheredHerbIds.includes(herbId)) return false;
+  quest.gatheredHerbIds.push(herbId);
+  addItem(gameState.inventory, 'calming_herb', 1);
+  quest.completed = quest.gatheredHerbIds.length >= 3;
+  return true;
+};
+
+export const turnInHerbQuest = (): boolean => {
+  const quest = gameState.herbQuest;
+  if (!quest.completed || quest.turnedIn || !removeItem(gameState.inventory, 'calming_herb', 3)) return false;
+  quest.turnedIn = true;
+  addItem(gameState.inventory, 'healing_pill', 2);
+  addItem(gameState.inventory, 'antidote_powder', 1);
+  gameState.player.exp += 25;
+  return true;
 };
 
 function createQuest(id: string, title: string, targetEnemyId: string, requiredKills: number, accepted: boolean): QuestState {

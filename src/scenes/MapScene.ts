@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
-import { QINGYUN_MAP, type NpcDefinition } from '../data/maps';
+import { QINGYUN_MAP } from '../data/maps';
 import { getNpcDialogue } from '../data/npcDialogues';
 import { DialogueOverlay } from '../systems/dialogueOverlay';
 import { EncounterSystem, isPointInZone } from '../systems/encounterSystem';
 import { applyBattleResult, gameState, getActiveQuest, type BattleResult } from '../systems/gameState';
+import { createHerbNodes, gatherNearbyHerb } from '../systems/herbQuest';
 import { drawQingyunMap } from '../systems/mapRenderer';
+import { formatMapHud } from '../systems/mapHud';
+import { createNpcSprites, findNearbyNpc } from '../systems/npcSystem';
 import { PlayerController } from '../systems/playerController';
 import { audioManager } from '../systems/audioManager';
 
@@ -27,6 +30,7 @@ export class MapScene extends Phaser.Scene {
   private playerController!: PlayerController;
   private encounters = new EncounterSystem();
   private npcSprites: Phaser.Physics.Arcade.Sprite[] = [];
+  private herbNodes: Phaser.GameObjects.Arc[] = [];
   private bossTriggered = false;
   private startX = QINGYUN_MAP.playerSpawn.x;
   private startY = QINGYUN_MAP.playerSpawn.y;
@@ -41,6 +45,7 @@ export class MapScene extends Phaser.Scene {
     this.startY = data.playerY ?? QINGYUN_MAP.playerSpawn.y;
     this.inputLocked = false;
     this.npcSprites = [];
+    this.herbNodes = [];
     this.bossTriggered = false;
     if (data.battleResult) this.handleBattleResult(data.battleResult);
   }
@@ -50,7 +55,7 @@ export class MapScene extends Phaser.Scene {
     audioManager.unlock(this); audioManager.startMusic('map');
     drawQingyunMap(this); this.createAnimations();
     this.createPlayer(); this.createBlockers();
-    this.createNpcs(); this.createInput(); this.createHud();
+    this.createNpcs(); this.createHerbs(); this.createInput(); this.createHud();
     this.dialogue = new DialogueOverlay(this);
   }
 
@@ -85,14 +90,10 @@ export class MapScene extends Phaser.Scene {
     this.physics.add.collider(this.player, blockers);
   }
 
-  private createNpcs(): void {
-    QINGYUN_MAP.npcs.forEach(npc => {
-      const sprite = this.physics.add.staticSprite(npc.x, npc.y, npc.texture);
-      sprite.setDisplaySize(npc.id === 'village_elder' ? 44 : 50, npc.id === 'village_elder' ? 44 : 50);
-      sprite.setData('npc', npc);
-      this.npcSprites.push(sprite);
-      this.add.text(npc.x, npc.y - 38, npc.name, { fontSize: '13px', color: '#fff' }).setOrigin(0.5);
-    });
+  private createNpcs(): void { this.npcSprites = createNpcSprites(this, QINGYUN_MAP.npcs); }
+
+  private createHerbs(): void {
+    this.herbNodes = createHerbNodes(this);
   }
 
   private createInput(): void {
@@ -122,7 +123,7 @@ export class MapScene extends Phaser.Scene {
     this.hudText.setScrollFactor(0);
     this.noticeText.setScrollFactor(0);
     this.refreshHud();
-    this.showNotice('空格与村长对话，进入东边竹林会随机遇敌。');
+    this.showNotice('空格与村民对话，进入东边竹林会随机遇敌。');
   }
 
   private trackEncounterDistance(): void {
@@ -143,9 +144,10 @@ export class MapScene extends Phaser.Scene {
   }
 
   private tryInteract(): void {
-    const npcSprite = this.npcSprites.find(sprite => Phaser.Math.Distance.Between(this.player.x, this.player.y, sprite.x, sprite.y) < 70);
-    if (!npcSprite) { this.showNotice('附近没有可交互对象。'); return; }
-    const npc = npcSprite.getData('npc') as NpcDefinition;
+    const herbNotice = gatherNearbyHerb(this.player, this.herbNodes);
+    if (herbNotice) { audioManager.playSfx('select'); this.showNotice(herbNotice); return; }
+    const npc = findNearbyNpc(this.player, this.npcSprites);
+    if (!npc) { this.showNotice('附近没有可交互对象。'); return; }
     this.openDialogue(getNpcDialogue(npc));
   }
 
@@ -162,10 +164,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   private refreshHud(): void {
-    const { player } = gameState;
-    const activeQuest = getActiveQuest();
-    const questLine = activeQuest.accepted ? `${activeQuest.title}: ${activeQuest.currentKills}/${activeQuest.requiredKills}${activeQuest.completed ? ' 已完成' : ''}` : '主线: 与村长对话';
-    this.hudText.setText(`等级 ${player.level}  经验 ${player.exp}/${player.nextLevelExp}  金 ${player.gold}\n${questLine}`);
+    this.hudText.setText(formatMapHud(getActiveQuest()));
   }
 
   private showNotice(message: string): void {

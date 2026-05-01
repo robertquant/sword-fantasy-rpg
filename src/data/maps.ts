@@ -14,6 +14,12 @@ export interface NpcDefinition {
   texture: string;
 }
 
+export interface HerbNodeDefinition {
+  id: string;
+  x: number;
+  y: number;
+}
+
 export interface MapDefinition {
   width: number;
   height: number;
@@ -22,6 +28,7 @@ export interface MapDefinition {
   bossZone: RectDefinition;
   blockers: RectDefinition[];
   npcs: NpcDefinition[];
+  herbNodes: HerbNodeDefinition[];
 }
 
 export const QINGYUN_MAP: MapDefinition = {
@@ -46,5 +53,10 @@ export const QINGYUN_MAP: MapDefinition = {
     { id: 'herbalist', name: '药师', x: 300, y: 710, color: 0xb8f0a2, texture: 'npc-herbalist' },
     { id: 'blacksmith', name: '铁匠', x: 620, y: 675, color: 0xf0b06a, texture: 'npc-blacksmith' },
     { id: 'patrol_disciple', name: '巡逻弟子', x: 760, y: 560, color: 0xaed2ff, texture: 'npc-patrol' },
+  ],
+  herbNodes: [
+    { id: 'herb_1', x: 1115, y: 710 },
+    { id: 'herb_2', x: 1230, y: 535 },
+    { id: 'herb_3', x: 1415, y: 760 },
   ],
 };
