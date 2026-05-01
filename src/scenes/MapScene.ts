@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { getElderDialogue } from '../data/dialogues';
 import { QINGYUN_MAP, type NpcDefinition, type RectDefinition } from '../data/maps';
+import { DialogueOverlay } from '../systems/dialogueOverlay';
 import { applyBattleResult, gameState, type BattleResult } from '../systems/gameState';
 import { createActorTextures, drawQingyunMap } from '../systems/mapRenderer';
 
@@ -23,7 +24,7 @@ export class MapScene extends Phaser.Scene {
   private battleKey!: Phaser.Input.Keyboard.Key;
   private hudText!: Phaser.GameObjects.Text;
   private noticeText!: Phaser.GameObjects.Text;
-  private dialogueBox?: Phaser.GameObjects.Container;
+  private dialogue!: DialogueOverlay;
   private npcSprites: Phaser.Physics.Arcade.Sprite[] = [];
   private distanceSinceEncounter = 0;
   private lastPosition = new Phaser.Math.Vector2();
@@ -50,11 +51,13 @@ export class MapScene extends Phaser.Scene {
     this.createNpcs();
     this.createInput();
     this.createHud();
+    this.dialogue = new DialogueOverlay(this);
   }
 
   update(_time: number, delta: number): void {
     if (this.inputLocked) {
       this.player.setVelocity(0);
+      if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.advanceDialogue();
       return;
     }
 
@@ -138,10 +141,7 @@ export class MapScene extends Phaser.Scene {
 
   private tryInteract(): void {
     const npcSprite = this.npcSprites.find(sprite => Phaser.Math.Distance.Between(this.player.x, this.player.y, sprite.x, sprite.y) < 70);
-    if (!npcSprite) {
-      this.showNotice('附近没有可交互对象。');
-      return;
-    }
+    if (!npcSprite) { this.showNotice('附近没有可交互对象。'); return; }
     const npc = npcSprite.getData('npc') as NpcDefinition;
     if (npc.id === 'village_elder') this.openDialogue(getElderDialogue());
   }
@@ -149,16 +149,14 @@ export class MapScene extends Phaser.Scene {
   private openDialogue(lines: string[]): void {
     this.inputLocked = true;
     this.player.setVelocity(0);
-    this.dialogueBox?.destroy(); const panel = this.add.rectangle(400, 500, 730, 150, 0x171018, 0.94).setStrokeStyle(2, 0xf0c987);
-    const text = this.add.text(60, 445, lines.join('\n'), { fontSize: '17px', color: '#fff', lineSpacing: 8, wordWrap: { width: 680 } });
-    const hint = this.add.text(720, 565, '空格继续', { fontSize: '13px', color: '#f0c987' }).setOrigin(1, 0.5);
-    this.dialogueBox = this.add.container(0, 0, [panel, text, hint]).setScrollFactor(0);
+    this.dialogue.open(lines);
     if (!gameState.quest.accepted) gameState.quest.accepted = true;
-    this.input.keyboard!.once('keydown-SPACE', () => {
-      this.dialogueBox?.destroy();
-      this.inputLocked = false;
-      this.refreshHud();
-    });
+  }
+
+  private advanceDialogue(): void {
+    if (!this.dialogue.advance()) return;
+    this.inputLocked = false;
+    this.refreshHud();
   }
 
   private refreshHud(): void {
@@ -169,9 +167,7 @@ export class MapScene extends Phaser.Scene {
 
   private showNotice(message: string): void {
     this.noticeText.setText(message);
-    this.time.delayedCall(2400, () => {
-      if (this.noticeText.text === message) this.noticeText.setText('');
-    });
+    this.time.delayedCall(2400, () => { if (this.noticeText.text === message) this.noticeText.setText(''); });
   }
 
   private handleBattleResult(result: BattleResult): void {
